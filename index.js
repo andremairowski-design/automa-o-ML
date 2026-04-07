@@ -1,6 +1,6 @@
-import dotenv from "dotenv";
-import express from "express";
-import cors from "cors";
+const express = require("express");
+const cors = require("cors");
+const dotenv = require("dotenv");
 
 dotenv.config();
 
@@ -9,103 +9,108 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
+// CONFIG FIXA
+const LARGURA_FILME = 28;
+const ESPACAMENTO = 0.5;
+
+// FUNÇÃO DE CÁLCULO
+function calcularMetragem(largura, altura, quantidade) {
+  const larguraNum = parseFloat(String(largura).replace(",", "."));
+  const alturaNum = parseFloat(String(altura).replace(",", "."));
+  const quantidadeNum = parseInt(quantidade, 10);
+
+  if (isNaN(larguraNum) || isNaN(alturaNum) || isNaN(quantidadeNum)) {
+    throw new Error("Os valores precisam ser numéricos");
+  }
+
+  if (larguraNum <= 0 || alturaNum <= 0 || quantidadeNum <= 0) {
+    throw new Error("Os valores precisam ser maiores que zero");
+  }
+
+  const larguraTotal = larguraNum + ESPACAMENTO;
+  const alturaTotal = alturaNum + ESPACAMENTO;
+
+  const porLinha = Math.floor(LARGURA_FILME / larguraTotal);
+
+  if (porLinha <= 0) {
+    throw new Error("Largura do adesivo maior que o filme");
+  }
+
+  const linhas = Math.ceil(quantidadeNum / porLinha);
+  const alturaFinalCm = linhas * alturaTotal;
+  const metros = alturaFinalCm / 100;
+
+  return {
+    largura: larguraNum,
+    altura: alturaNum,
+    quantidade: quantidadeNum,
+    porLinha,
+    linhas,
+    metros: metros.toFixed(2)
+  };
+}
+
+// ROTA BASE
 app.get("/", (req, res) => {
   res.send("API rodando 🚀");
 });
 
+// ROTA DE CÁLCULO
 app.get("/calcular", (req, res) => {
-  const { largura, altura, quantidade } = req.query;
+  try {
+    const { largura, altura, quantidade } = req.query;
 
-  if (!largura || !altura || !quantidade) {
+    if (!largura || !altura || !quantidade) {
+      return res.status(400).json({
+        erro: "Informe largura, altura e quantidade"
+      });
+    }
+
+    const resultado = calcularMetragem(largura, altura, quantidade);
+
+    const resposta = `Para ${resultado.quantidade} adesivos de ${resultado.largura}x${resultado.altura}cm, você vai precisar de aproximadamente ${resultado.metros} metros lineares.`;
+
+    return res.json({
+      resposta,
+      porLinha: resultado.porLinha,
+      linhas: resultado.linhas,
+      metros: resultado.metros
+    });
+  } catch (error) {
     return res.status(400).json({
-      erro: "Informe largura, altura e quantidade"
+      erro: error.message
     });
   }
-
-  const espacamento = 0.5;
-  const larguraFilme = 28;
-
-  const larguraNum = parseFloat(String(largura).replace(",", "."));
-  const alturaNum = parseFloat(String(altura).replace(",", "."));
-  const quantidadeNum = parseInt(quantidade, 10);
-
-  if (isNaN(larguraNum) || isNaN(alturaNum) || isNaN(quantidadeNum)) {
-    return res.status(400).json({
-      erro: "Os valores precisam ser numéricos"
-    });
-  }
-
-  const larguraTotal = larguraNum + espacamento;
-  const alturaTotal = alturaNum + espacamento;
-
-  const porLinha = Math.floor(larguraFilme / larguraTotal);
-
-  if (porLinha <= 0) {
-    return res.status(400).json({
-      erro: "Largura do adesivo maior que o filme"
-    });
-  }
-
-  const linhas = Math.ceil(quantidadeNum / porLinha);
-  const alturaFinalCm = linhas * alturaTotal;
-  const metros = alturaFinalCm / 100;
-
-  const resposta = `Para ${quantidadeNum} adesivos de ${larguraNum}x${alturaNum}cm, você vai precisar de aproximadamente ${metros.toFixed(2)} metros lineares.`;
-
-  res.json({
-    resposta,
-    porLinha,
-    linhas,
-    metros: metros.toFixed(2)
-  });
 });
 
+// ROTA DE RESPOSTA PRONTA
 app.get("/responder", (req, res) => {
-  const { largura, altura, quantidade } = req.query;
+  try {
+    const { largura, altura, quantidade } = req.query;
 
-  if (!largura || !altura || !quantidade) {
+    if (!largura || !altura || !quantidade) {
+      return res.status(400).json({
+        erro: "Informe largura, altura e quantidade"
+      });
+    }
+
+    const resultado = calcularMetragem(largura, altura, quantidade);
+
+    const resposta = `Para ${resultado.quantidade} adesivos de ${resultado.largura}x${resultado.altura}cm, você vai precisar de aproximadamente ${resultado.metros} metros lineares.`;
+
+    return res.json({
+      resposta
+    });
+  } catch (error) {
     return res.status(400).json({
-      erro: "Informe largura, altura e quantidade"
+      erro: error.message
     });
   }
-
-  const espacamento = 0.5;
-  const larguraFilme = 28;
-
-  const larguraNum = parseFloat(String(largura).replace(",", "."));
-  const alturaNum = parseFloat(String(altura).replace(",", "."));
-  const quantidadeNum = parseInt(quantidade, 10);
-
-  if (isNaN(larguraNum) || isNaN(alturaNum) || isNaN(quantidadeNum)) {
-    return res.status(400).json({
-      erro: "Os valores precisam ser numéricos"
-    });
-  }
-
-  const larguraTotal = larguraNum + espacamento;
-  const alturaTotal = alturaNum + espacamento;
-
-  const porLinha = Math.floor(larguraFilme / larguraTotal);
-
-  if (porLinha <= 0) {
-    return res.status(400).json({
-      erro: "Largura do adesivo maior que o filme"
-    });
-  }
-
-  const linhas = Math.ceil(quantidadeNum / porLinha);
-  const alturaFinalCm = linhas * alturaTotal;
-  const metros = alturaFinalCm / 100;
-
-  const resposta = `Para ${quantidadeNum} adesivos de ${larguraNum}x${alturaNum}cm, você vai precisar de aproximadamente ${metros.toFixed(2)} metros lineares.`;
-
-  res.json({
-    resposta
-  });
 });
 
-app.listen(PORT, () => {
+// START
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
